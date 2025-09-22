@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UG Noticias Mineras</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .prose { max-width: 100%; }
+        .prose img { max-width: 100%; height: auto; }
+        .prose p { margin-bottom: 1rem; line-height: 1.7; }
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 { 
+            margin-top: 1.5rem; 
+            margin-bottom: 0.5rem; 
+            line-height: 1.2; 
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('home');
+            const [currentNewsId, setCurrentNewsId] = useState(null);
+            const [newsData, setNewsData] = useState({
+                nacionales: [],
+                sanjuan: [],
+                sindicales: [],
+                opinion: []
+            });
+            const [loading, setLoading] = useState(true);
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [error, setError] = useState(null);
+
+            // WordPress API base URL - Configurado con tu sitio WordPress
+            const WORDPRESS_API_URL = 'https://xtianaguilar79-hbsty.wordpress.com/wp-json/wp/v2';
+
+            // IDs de categorías de tu WordPress
+            const categories = {
+                nacionales: 170094,
+                sanjuan: 67720,
+                sindicales: 3865306,
+                opinion: 352
+            };
+
+            // Función para obtener noticias de WordPress
+            const fetchNewsFromWordPress = async () => {
+                try {
+                    setLoading(true);
+                    
+                    // Creamos un objeto para almacenar las noticias por categoría
+                    let fetchedNewsData = {
+                        nacionales: [],
+                        sanjuan: [],
+                        sindicales: [],
+                        opinion: []
+                    };
+
+                    // Obtenemos las noticias para cada categoría
+                    for (const [key, categoryId] of Object.entries(categories)) {
+                        try {
+                            const response = await fetch(`${WORDPRESS_API_URL}/posts?categories=${categoryId}&per_page=10&_embed&orderby=date&order=desc`);
+                            
+                            if (!response.ok) {
+                                throw new Error(`Error al obtener noticias de la categoría ${key}: ${response.status}`);
+                            }
+                            
+                            const posts = await response.json();
+                            
+                            // Transformamos los datos de WordPress al formato que usa nuestra app
+                            fetchedNewsData[key] = posts.map(post => {
+                                // Extraer la primera imagen del contenido si no hay imagen destacada
+                                const contentImages = post.content.rendered.match(/<img[^>]+src="([^">]+)"/g);
+                                const firstContentImage = contentImages && contentImages.length > 0 
+                                  ? contentImages[0].match(/src="([^">]+)"/)[1] 
+                                  : null;
+                                
+                                // URL de la imagen destacada o imagen por defecto
+                                const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+                                const imageUrl = featuredImage || firstContentImage || 
+                                               'https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758249132/Cuchari_dsjsok.jpg';
+                                
+                                // Crear array de imágenes adicionales
+                                let additionalImages = [imageUrl];
+                                if (firstContentImage && firstContentImage !== imageUrl) {
+                                    additionalImages.push(firstContentImage);
+                                }
+                                
+                                // Extraer fuente del contenido si está disponible
+                                let source = 'Fuente: WordPress';
+                                const sourceMatch = post.content.rendered.match(/Fuente:\s*([^<]+)/);
+                                if (sourceMatch && sourceMatch[1]) {
+                                    source = `Fuente: ${sourceMatch[1].trim()}`;
+                                }
+                                
+                                // Formatear fecha
+                                const postDate = new Date(post.date);
+                                const options = { day: 'numeric', month: 'long', year: 'numeric' };
+                                const formattedDate = postDate.toLocaleDateString('es-ES', options).replace(' de ', ' de ');
+                                
+                                return {
+                                    id: post.slug,
+                                    title: post.title.rendered,
+                                    subtitle: post.excerpt.rendered.replace(/<[^>]*>/g, '').substring(0, 150) + '...',
+                                    image: imageUrl,
+                                    additionalImages: additionalImages,
+                                    category: key.toUpperCase() === 'NACIONALES' ? 'NACIONAL' : 
+                                             key.toUpperCase() === 'SANJUAN' ? 'SAN JUAN' : 
+                                             key.toUpperCase() === 'SINDICALES' ? 'SINDICAL' : 'OPINIÓN',
+                                    categoryColor: key === 'nacionales' ? 'bg-blue-600' : 
+                                                  key === 'sanjuan' ? 'bg-red-500' : 
+                                                  key === 'sindicales' ? 'bg-green-600' : 'bg-purple-600',
+                                    content: post.content.rendered,
+                                    source: source,
+                                    date: formattedDate,
+                                    related: [] // Podrías implementar relaciones entre posts usando tags o campos personalizados
+                                };
+                            });
+                        } catch (err) {
+                            console.error(`Error fetching ${key} news:`, err);
+                            // Mantenemos array vacío si hay error en una categoría específica
+                            fetchedNewsData[key] = [];
+                        }
+                    }
+
+                    setNewsData(fetchedNewsData);
+                    setError(null);
+                } catch (err) {
+                    console.error('Error general al obtener noticias:', err);
+                    setError('Error al cargar las noticias. Por favor, inténtelo de nuevo más tarde.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                // Cargar noticias desde WordPress
+                fetchNewsFromWordPress();
+
+                // Update date every minute
+                const dateInterval = setInterval(() => {
+                    setCurrentDate(new Date());
+                }, 60000);
+
+                return () => clearInterval(dateInterval);
+            }, []);
+
+            // Format date to Spanish
+            const formatDate = (date) => {
+                const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                const dayName = days[date.getDay()];
+                const day = date.getDate();
+                const month = months[date.getMonth()];
+                const year = date.getFullYear();
+                return `${dayName} ${day} de ${month} de ${year}`;
+            };
+
+            // Get news by ID
+            const getNewsById = (id) => {
+                for (const section in newsData) {
+                    const news = newsData[section].find(item => item.id === id);
+                    if (news) return news;
+                }
+                return null;
+            };
+
+            // Get related news
+            const getRelatedNews = (relatedIds) => {
+                const relatedNews = [];
+                for (const section in newsData) {
+                    for (const news of newsData[section]) {
+                        if (relatedIds.includes(news.id)) {
+                            relatedNews.push(news);
+                        }
+                    }
+                }
+                return relatedNews;
+            };
+
+            // Navigation function
+            const navigateToNews = (section, newsId = null) => {
+                setCurrentPage(section);
+                setCurrentNewsId(newsId);
+                window.scrollTo(0, 0);
+            };
+
+            // Render specific news article
+            const renderNewsArticle = (news) => {
+                if (!news) return null;
+
+                const relatedNews = getRelatedNews(news.related || []);
+
+                return (
+                    <div className="space-y-8">
+                        <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+                            <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-6">
+                                <h2 className="text-2xl font-bold text-white">
+                                    {news.category === 'NACIONAL' ? 'Noticias Nacionales' : 
+                                    news.category === 'SAN JUAN' ? 'Noticias de San Juan' : 
+                                    news.category === 'SINDICAL' ? 'Noticias Sindicales' : 'Columnas de Opinión'}
+                                </h2>
+                                <div className="w-24 h-1 bg-red-500 mt-2"></div>
+                            </div>
+                            <div className="p-6">
+                                <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg border border-blue-200 overflow-hidden">
+                                    {news.image && (
+                                        <div className="h-80 bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center relative overflow-hidden">
+                                            <img 
+                                                src={news.image} 
+                                                alt={news.title} 
+                                                className="w-full h-full object-cover object-center"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentNode.innerHTML = `
+                                                        <div class="w-full h-full bg-gradient-to-br from-blue-300 to-blue-400 flex items-center justify-center">
+                                                            <div class="text-blue-800 font-bold text-center p-4">${news.title}</div>
+                                                        </div>
+                                                    `;
+                                                }}
+                                            />
+                                            <div className={`absolute top-4 left-4 ${news.categoryColor} text-white px-3 py-1 rounded-full font-semibold text-sm`}>{news.category}</div>
+                                        </div>
+                                    )}
+                                    <div className="p-6">
+                                        <h3 className="font-bold text-2xl text-blue-900 mb-3">{news.title}</h3>
+                                        {news.subtitle && <p className="text-blue-700 font-medium mb-4">{news.subtitle}</p>}
+                                        
+                                        {/* Display additional images inside the article */}
+                                        {news.additionalImages && news.additionalImages.length > 1 && (
+                                            <div className="my-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {news.additionalImages.slice(1).map((img, index) => (
+                                                    <div key={index} className="rounded-lg overflow-hidden shadow-md">
+                                                        <img 
+                                                            src={img} 
+                                                            alt={`Imagen adicional ${index + 1}`} 
+                                                            className="w-full h-48 object-cover object-center hover:scale-105 transition-transform duration-300"
+                                                            onError={(e) => {
+                                                                e.target.style.display = 'none';
+                                                                e.target.parentNode.innerHTML = `
+                                                                    <div class="w-full h-48 bg-gradient-to-br from-blue-300 to-blue-400 flex items-center justify-center">
+                                                                        <div class="text-blue-800 font-bold text-center p-4">Imagen ${index + 1}</div>
+                                                                    </div>
+                                                                `;
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        <div className="prose text-gray-700 leading-relaxed max-w-none" 
+                                            dangerouslySetInnerHTML={{ __html: news.content }}>
+                                        </div>
+                                        <div className="mt-6 pt-4 border-t border-blue-100">
+                                            <p className="text-blue-800 font-medium">{news.source}</p>
+                                            <p className="text-gray-500 text-sm mt-1">Publicado: {news.date}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Related News */}
+                                {relatedNews.length > 0 && (
+                                    <div className="mt-8">
+                                        <h4 className="text-xl font-bold text-blue-900 mb-4">Noticias Relacionadas</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {relatedNews.map((related) => (
+                                                <div 
+                                                    key={related.id}
+                                                    className="border-l-4 border-blue-600 pl-4 py-3 hover:bg-blue-50 transition-all duration-300 cursor-pointer"
+                                                    onClick={() => navigateToNews(
+                                                        related.id.includes('sanjuan') ? 'sanjuan' :
+                                                        related.id.includes('sindical') ? 'sindicales' :
+                                                        related.id.includes('opinion') ? 'opinion' : 'nacionales',
+                                                        related.id
+                                                    )}
+                                                >
+                                                    <h5 className="font-medium text-blue-900">{related.title}</h5>
+                                                    <p className="text-gray-600 text-sm mt-1">{related.subtitle}</p>
+                                                    <p className="text-gray-500 text-xs mt-2">{related.date}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Render news list for a section
+            const renderNewsList = (section) => {
+                const newsList = newsData[section];
+                return (
+                    <div className="space-y-8">
+                        <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+                            <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-6">
+                                <h2 className="text-2xl font-bold text-white">
+                                    {section === 'nacionales' ? 'Noticias Nacionales' : 
+                                    section === 'sanjuan' ? 'Noticias de San Juan' : 
+                                    section === 'sindicales' ? 'Noticias Sindicales' : 'Columnas de Opinión'}
+                                </h2>
+                                <div className="w-24 h-1 bg-red-500 mt-2"></div>
+                            </div>
+                            <div className="p-6">
+                                {newsList.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500">No hay noticias disponibles en esta categoría.</p>
+                                        <button 
+                                            onClick={fetchNewsFromWordPress}
+                                            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                                        >
+                                            Recargar noticias
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-8">
+                                        {newsList.map((news, index) => (
+                                            <div 
+                                                key={news.id} 
+                                                className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-blue-100 overflow-hidden cursor-pointer"
+                                                onClick={() => navigateToNews(section, news.id)}
+                                            >
+                                                <div className="p-6">
+                                                    <div className="flex items-center mb-3">
+                                                        <span className={`${news.categoryColor} text-white px-2 py-1 rounded text-xs font-semibold mr-3`}>{news.category}</span>
+                                                        <h3 className="font-bold text-blue-900 text-xl">{news.title}</h3>
+                                                    </div>
+                                                    <p className="text-gray-600 mb-4" dangerouslySetInnerHTML={{ __html: news.subtitle }}></p>
+                                                    <div className="mt-6 pt-4 border-t border-blue-100 flex justify-between items-center">
+                                                        <p className="text-blue-800 font-medium">{news.source}</p>
+                                                        <p className="text-gray-500 text-sm">{news.date}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderPageContent = () => {
+                if (loading) {
+                    return (
+                        <div className="flex items-center justify-center h-64">
+                            <div className="text-blue-900 text-xl font-semibold">Cargando noticias...</div>
+                        </div>
+                    );
+                }
+
+                if (error) {
+                    return (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                            <h3 className="text-red-800 font-bold mb-2">Error al cargar las noticias</h3>
+                            <p className="text-red-700 mb-4">{error}</p>
+                            <button 
+                                onClick={fetchNewsFromWordPress}
+                                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                            >
+                                Intentar nuevamente
+                            </button>
+                        </div>
+                    );
+                }
+
+                switch(currentPage) {
+                    case 'nacionales':
+                    case 'sanjuan':
+                    case 'sindicales':
+                    case 'opinion':
+                        if (currentNewsId) {
+                            const news = getNewsById(currentNewsId);
+                            if (!news) {
+                                return (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                                        <h3 className="text-yellow-800 font-bold mb-2">Noticia no encontrada</h3>
+                                        <p className="text-yellow-700 mb-4">La noticia que estás buscando no está disponible.</p>
+                                        <button 
+                                            onClick={() => navigateToNews(currentPage)}
+                                            className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                                        >
+                                            Volver a {currentPage === 'nacionales' ? 'Nacionales' : 
+                                                    currentPage === 'sanjuan' ? 'San Juan' : 
+                                                    currentPage === 'sindicales' ? 'Sindicales' : 'Opinión'}
+                                        </button>
+                                    </div>
+                                );
+                            }
+                            return renderNewsArticle(news);
+                        }
+                        return renderNewsList(currentPage);
+                    default:
+                        return (
+                            <div className="space-y-8">
+                                {/* Featured News Section */}
+                                <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+                                    <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-6">
+                                        <h2 className="text-2xl font-bold text-white">Noticias Destacadas</h2>
+                                        <div className="w-24 h-1 bg-red-500 mt-2"></div>
+                                    </div>
+                                    <div className="p-6">
+                                        {Object.values(newsData).flat().length === 0 ? (
+                                            <div className="text-center py-8">
+                                                <p className="text-gray-500 mb-4">No hay noticias disponibles en este momento.</p>
+                                                <button 
+                                                    onClick={fetchNewsFromWordPress}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                                                >
+                                                    Recargar noticias
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                {/* Featured News - Primera noticia de Nacionales */}
+                                                {newsData.nacionales.length > 0 && (
+                                                    <div 
+                                                        className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg border border-blue-200 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                                                        onClick={() => navigateToNews('nacionales', newsData.nacionales[0].id)}
+                                                    >
+                                                        <div className="h-80 bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center relative overflow-hidden">
+                                                            <img 
+                                                                src={newsData.nacionales[0].image} 
+                                                                alt={newsData.nacionales[0].title} 
+                                                                className="w-full h-full object-cover object-center"
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    e.target.parentNode.innerHTML = `
+                                                                        <div class="w-full h-full bg-gradient-to-br from-blue-300 to-blue-400 flex items-center justify-center">
+                                                                            <div class="text-blue-800 font-bold text-center p-4">${newsData.nacionales[0].title}</div>
+                                                                        </div>
+                                                                    `;
+                                                                }}
+                                                            />
+                                                            <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full font-semibold text-sm">NACIONAL</div>
+                                                        </div>
+                                                        <div className="p-6">
+                                                            <h3 className="font-bold text-blue-900 mb-3 text-xl">{newsData.nacionales[0].title}</h3>
+                                                            <p className="text-gray-600 text-sm mb-4" dangerouslySetInnerHTML={{ __html: newsData.nacionales[0].subtitle }}></p>
+                                                            <div className="mt-4">
+                                                                <span className="text-blue-700 text-sm font-medium flex items-center">
+                                                                    <span>Ver noticia completa</span>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Featured News - Primera noticia de San Juan */}
+                                                {newsData.sanjuan.length > 0 && (
+                                                    <div 
+                                                        className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg border border-blue-200 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                                                        onClick={() => navigateToNews('sanjuan', newsData.sanjuan[0].id)}
+                                                    >
+                                                        <div className="h-80 bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center relative overflow-hidden">
+                                                            <img 
+                                                                src={newsData.sanjuan[0].image} 
+                                                                alt={newsData.sanjuan[0].title} 
+                                                                className="w-full h-full object-cover object-center"
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    e.target.parentNode.innerHTML = `
+                                                                        <div class="w-full h-full bg-gradient-to-br from-blue-300 to-blue-400 flex items-center justify-center">
+                                                                            <div class="text-blue-800 font-bold text-center p-4">${newsData.sanjuan[0].title}</div>
+                                                                        </div>
+                                                                    `;
+                                                                }}
+                                                            />
+                                                            <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full font-semibold text-sm">SAN JUAN</div>
+                                                        </div>
+                                                        <div className="p-6">
+                                                            <h3 className="font-bold text-blue-900 mb-3 text-xl">{newsData.sanjuan[0].title}</h3>
+                                                            <p className="text-gray-600 text-sm mb-4" dangerouslySetInnerHTML={{ __html: newsData.sanjuan[0].subtitle }}></p>
+                                                            <div className="mt-4">
+                                                                <span className="text-blue-700 text-sm font-medium flex items-center">
+                                                                    <span>Ver noticia completa</span>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Si no hay noticias en las categorías principales, mostramos un mensaje */}
+                                                {newsData.nacionales.length === 0 && newsData.sanjuan.length === 0 && (
+                                                    <div className="col-span-2 text-center py-8">
+                                                        <p className="text-gray-500 mb-4">No hay noticias destacadas disponibles en este momento.</p>
+                                                        <button 
+                                                            onClick={fetchNewsFromWordPress}
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                                                        >
+                                                            Recargar noticias
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+                    {/* Header */}
+                    <header className="bg-white border-b-4 border-blue-800 shadow-lg">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center py-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="relative">
+                                        <a href="#" onClick={(e) => { e.preventDefault(); navigateToNews('home'); }}>
+                                            <div className="w-20 h-20 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center border-4 border-red-500 shadow-lg">
+                                                <img 
+                                                    src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/Imagen_de_WhatsApp_2025-09-15_a_las_16.36.57_a3e577b6_gvohqi.jpg" 
+                                                    alt="UG Noticias Mineras Logo" 
+                                                    className="w-16 h-16 object-contain"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentNode.innerHTML = `
+                                                            <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                                                </svg>
+                                                            </div>
+                                                        `;
+                                                    }}
+                                                />
+                                            </div>
+                                        </a>
+                                        <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+                                            <div className="w-3 h-3 bg-blue-800 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <a href="#" onClick={(e) => { e.preventDefault(); navigateToNews('home'); }} className="block">
+                                            <h1 className="text-3xl font-bold text-blue-900 tracking-tight hover:text-blue-700 transition-colors">UG Noticias Mineras</h1>
+                                        </a>
+                                        <p className="text-blue-700 text-sm font-medium">Información del sector minero argentino</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-lg font-bold text-blue-900">{formatDate(currentDate)}</div>
+                                </div>
+                            </div>
+
+                            {/* Collaborators Banner */}
+                            <div className="py-4 bg-blue-50 border-t border-blue-100">
+                                <div className="flex justify-center items-center space-x-8">
+                                    <img 
+                                        src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/aoma1_geuaaf.jpg" 
+                                        alt="Colaborador AOMA" 
+                                        className="h-12 object-contain"
+                                    />
+                                    <img 
+                                        src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/aoma1_geuaaf.jpg" 
+                                        alt="Colaborador AOMA" 
+                                        className="h-12 object-contain"
+                                    />
+                                    <img 
+                                        src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/aoma1_geuaaf.jpg" 
+                                        alt="Colaborador AOMA" 
+                                        className="h-12 object-contain"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Navigation */}
+                            <nav className="border-t border-blue-100 py-4">
+                                <div className="flex flex-wrap justify-center gap-2 md:gap-6">
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('home'); }}
+                                        className={`px-6 py-3 ${currentPage === 'home' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                                            </svg>
+                                            <span>Inicio</span>
+                                        </div>
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
+                                        className={`px-6 py-3 ${currentPage === 'nacionales' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        Nacionales
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
+                                        className={`px-6 py-3 ${currentPage === 'sanjuan' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        San Juan
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('sindicales'); }}
+                                        className={`px-6 py-3 ${currentPage === 'sindicales' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        Sindicales
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('opinion'); }}
+                                        className={`px-6 py-3 ${currentPage === 'opinion' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                            </svg>
+                                            <span>Opinión</span>
+                                        </div>
+                                    </a>
+                                </div>
+                            </nav>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                            {/* Main Content Area */}
+                            <div className="lg:col-span-4">
+                                {renderPageContent()}
+                            </div>
+
+                            {/* Sidebar */}
+                            <div className="lg:col-span-1">
+                                {/* Opinion Column Box */}
+                                <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden mb-6 cursor-pointer"
+                                    onClick={() => navigateToNews('opinion')}
+                                >
+                                    <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-4 text-center">
+                                        <h3 className="text-xl font-bold text-white">SIN PELOS EN LA LENGUA</h3>
+                                        <div className="w-16 h-1 bg-red-500 mx-auto mt-2"></div>
+                                    </div>
+                                    <div className="p-4 h-32 bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+                                        <p className="text-red-800 font-semibold text-center">Columna de opinión semanal con análisis profundo del sector minero argentino.</p>
+                                    </div>
+                                </div>
+
+                                {/* Collaborators - First Set */}
+                                <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+                                    <div className="p-4 space-y-4">
+                                        <img 
+                                            src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/aoma1_geuaaf.jpg" 
+                                            alt="Colaborador AOMA" 
+                                            className="w-full h-20 object-contain rounded-lg hover:scale-105 transition-transform duration-300"
+                                        />
+                                        <img 
+                                            src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/aoma1_geuaaf.jpg" 
+                                            alt="Colaborador AOMA" 
+                                            className="w-full h-20 object-contain rounded-lg hover:scale-105 transition-transform duration-300"
+                                        />
+                                        <img 
+                                            src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/aoma1_geuaaf.jpg" 
+                                            alt="Colaborador AOMA" 
+                                            className="w-full h-20 object-contain rounded-lg hover:scale-105 transition-transform duration-300"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Stats Widget */}
+                                <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden mt-6">
+                                    <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-4 text-center">
+                                        <h3 className="text-xl font-bold text-white">Datos Mineros</h3>
+                                        <div className="w-16 h-1 bg-red-500 mx-auto mt-2"></div>
+                                    </div>
+                                    <div className="p-4 space-y-4">
+                                        <div className="bg-blue-50 rounded-lg p-3">
+                                            <div className="text-blue-900 font-semibold">Producción Mensual</div>
+                                            <div className="text-2xl font-bold text-blue-700">+12.5%</div>
+                                        </div>
+                                        <div className="bg-blue-50 rounded-lg p-3">
+                                            <div className="text-blue-900 font-semibold">Inversión Extranjera</div>
+                                            <div className="text-2xl font-bold text-blue-700">US$ 2.3B</div>
+                                        </div>
+                                        <div className="bg-blue-50 rounded-lg p-3">
+                                            <div className="text-blue-900 font-semibold">Empleos Generados</div>
+                                            <div className="text-2xl font-bold text-blue-700">45,892</div>
+                                        </div>
+                                        <div className="bg-blue-50 rounded-lg p-3">
+                                            <div className="text-blue-900 font-semibold">Proyectos Activos</div>
+                                            <div className="text-2xl font-bold text-blue-700">87</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <footer className="bg-gradient-to-r from-blue-900 to-blue-800 text-white mt-16 pt-12 pb-8">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex flex-col lg:flex-row justify-between items-center">
+                                <div className="mb-6 lg:mb-0">
+                                    <a href="#" onClick={(e) => { e.preventDefault(); navigateToNews('home'); }} className="flex items-center space-x-3">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center border-2 border-red-500">
+                                            <img 
+                                                src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/Imagen_de_WhatsApp_2025-09-15_a_las_16.36.57_a3e577b6_gvohqi.jpg" 
+                                                alt="UG Noticias Mineras Logo" 
+                                                className="w-12 h-12 object-contain"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentNode.innerHTML = `
+                                                        <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                                            </svg>
+                                                        </div>
+                                                    `;
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold">UG Noticias Mineras</h3>
+                                            <p className="text-blue-300 text-sm">© 2025 Todos los derechos reservados</p>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div className="flex space-x-4">
+                                    <a href="#" className="text-blue-200 hover:text-white transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
+                                        </svg>
+                                    </a>
+                                    <a href="#" className="text-blue-200 hover:text-white transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.014-3.668.07-4.849.196-4.358 2.618-6.78 6.98-6.98C8.333.014 8.741 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                                        </svg>
+                                    </a>
+                                    <a href="#" className="text-blue-200 hover:text-white transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.488.5.09.682-.216.682-.48 0-.236-.008-.864-.013-1.7-2.782.602-3.369-1.337-3.369-1.337-.454-1.151-1.11-1.458-1.11-1.458-.908-.618.069-.606.069-.606 1.003.07 1.531 1.027 1.531 1.027.891 1.524 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.252-4.555-1.107-4.555-4.93 0-1.087.39-1.979 1.029-2.675-.103-.252-.446-1.266.098-2.638 0 0 .84-.268 2.75 1.022A9.578 9.578 0 0112 6.835c.85.004 1.705.114 2.504.336 1.909-1.29 2.747-1.022 2.747-1.022.546 1.372.202 2.386.1 2.638.639.696 1.029 1.588 1.029 2.675 0 3.833-2.337 4.675-4.566 4.921.359.307.678.915.678 1.846 0 1.332-.012 2.407-.012 2.734 0 .267.18.577.688.48C19.137 20.162 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+                                        </svg>
+                                    </a>
+                                    <a href="#" className="text-blue-200 hover:text-white transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                            <div className="mt-8 pt-8 border-t border-blue-700 text-center">
+                                <p className="text-blue-300 text-sm">Comprometidos con la información veraz y el desarrollo sostenible de la minería argentina</p>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
