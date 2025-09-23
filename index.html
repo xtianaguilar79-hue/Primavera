@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -27,16 +26,14 @@
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-    <div id="root">
-        <!-- React App will be mounted here -->
-    </div>
+    <div id="root"></div>
 
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
         
         const App = () => {
             const [currentPage, setCurrentPage] = useState('home');
@@ -53,6 +50,8 @@
             const [searchQuery, setSearchQuery] = useState('');
             const [isSearchOpen, setIsSearchOpen] = useState(false);
             const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+            const searchRef = useRef(null);
+            const sponsorsRef = useRef(null);
             const [currentPageNumbers, setCurrentPageNumbers] = useState({
                 nacionales: 1,
                 sanjuan: 1,
@@ -78,8 +77,8 @@
                 let cleanedText = text.replace(/&nbsp;/g, ' ');
                 // También limpiar otras entidades HTML comunes
                 cleanedText = cleanedText.replace(/&amp;/g, '&');
-                cleanedText = cleanedText.replace(/&lt;/g, '<');
-                cleanedText = cleanedText.replace(/&gt;/g, '>');
+                cleanedText = cleanedText.replace(/</g, '<');
+                cleanedText = cleanedText.replace(/>/g, '>');
                 cleanedText = cleanedText.replace(/&quot;/g, '"');
                 cleanedText = cleanedText.replace(/&#8217;/g, "'");
                 cleanedText = cleanedText.replace(/&#8220;/g, '"');
@@ -969,6 +968,7 @@
                             {/* Collaborators Banner - Animated */}
                             <div className="py-4 bg-blue-50 border-t border-blue-100 overflow-hidden">
                                 <div 
+                                    ref={sponsorsRef}
                                     className="flex items-center space-x-8 animate-marquee"
                                 >
                                     {/* Duplicamos los sponsors para crear efecto infinito */}
@@ -1281,4 +1281,3 @@
     </script>
 </body>
 </html>
-```
