@@ -213,6 +213,7 @@
                         category: categoryKey.toUpperCase() === 'NACIONALES' ? 'NACIONAL' : 
                                  categoryKey.toUpperCase() === 'SANJUAN' ? 'SAN JUAN' : 
                                  categoryKey.toUpperCase() === 'SINDICALES' ? 'SINDICAL' : 'OPINIÓN',
+                        categoryKey: categoryKey, // Guardamos la clave de categoría
                         categoryColor: categoryKey === 'nacionales' ? 'bg-blue-600' : 
                                       categoryKey === 'sanjuan' ? 'bg-red-500' : 
                                       categoryKey === 'sindicales' ? 'bg-green-600' : 'bg-purple-600',
@@ -266,16 +267,17 @@
             };
 
             // Get related news
-            const getRelatedNews = (relatedIds) => {
-                const relatedNews = [];
-                for (const section in newsData) {
-                    for (const news of newsData[section]) {
-                        if (relatedIds.includes(news.id) || relatedIds.includes(news.id.toString())) {
-                            relatedNews.push(news);
-                        }
-                    }
-                }
-                return relatedNews;
+            const getRelatedNews = (currentNews) => {
+                if (!currentNews) return [];
+                
+                // Obtener noticias de la misma categoría
+                const sameCategoryNews = newsData[currentNews.categoryKey] || [];
+                
+                // Filtrar para excluir la noticia actual
+                const relatedNews = sameCategoryNews.filter(news => news.id !== currentNews.id);
+                
+                // Tomar las 3 más recientes
+                return relatedNews.slice(0, 3);
             };
 
             // Navigation function
@@ -318,7 +320,7 @@
             // Render specific news article
             const renderNewsArticle = (news) => {
                 if (!news) return null;
-                const relatedNews = getRelatedNews(news.related || []);
+                const relatedNews = getRelatedNews(news);
                 
                 return (
                     <div className="space-y-8">
@@ -393,20 +395,21 @@
                                 {relatedNews.length > 0 && (
                                     <div className="mt-8">
                                         <h4 className="text-xl font-bold text-blue-900 mb-4">Noticias Relacionadas</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             {relatedNews.map((related) => (
                                                 <div 
                                                     key={related.id}
-                                                    className="border-l-4 border-blue-600 pl-4 py-3 hover:bg-blue-50 transition-all duration-300 cursor-pointer"
+                                                    className="border-l-4 border-blue-600 pl-4 py-3 hover:bg-blue-50 transition-all duration-300 cursor-pointer bg-white rounded-lg shadow-md"
                                                     onClick={() => navigateToNews(
-                                                        related.id.includes('sanjuan') ? 'sanjuan' :
-                                                        related.id.includes('sindical') ? 'sindicales' :
-                                                        related.id.includes('opinion') ? 'opinion' : 'nacionales',
+                                                        related.categoryKey,
                                                         related.id
                                                     )}
                                                 >
-                                                    <h5 className="font-medium text-blue-900">{related.title}</h5>
-                                                    <p className="text-gray-600 text-sm mt-1">{related.subtitle}</p>
+                                                    <div className="mb-2">
+                                                        <span className={`${related.categoryColor} text-white px-2 py-1 rounded text-xs font-semibold`}>{related.category}</span>
+                                                    </div>
+                                                    <h5 className="font-medium text-blue-900 text-sm">{related.title}</h5>
+                                                    <p className="text-gray-600 text-xs mt-1">{related.subtitle}</p>
                                                     <p className="text-gray-500 text-xs mt-2">{related.date}</p>
                                                 </div>
                                             ))}
@@ -912,21 +915,14 @@
                                     </div>
                                 </div>
                                 
-                                <div className="flex items-center space-x-4">
-                                    {/* Search Button */}
-                                    <button 
-                                        className="text-blue-900 hover:text-blue-700 transition-colors"
-                                        onClick={() => setIsSearchOpen(!isSearchOpen)}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    </button>
-                                    
-                                    <div className="text-right">
-                                        <div className="text-lg font-bold text-blue-900">{formatDate(currentDate)}</div>
-                                    </div>
+                                <div className="hidden lg:block text-right">
+                                    <div className="text-lg font-bold text-blue-900">{formatDate(currentDate)}</div>
                                 </div>
+                            </div>
+                            
+                            {/* Mobile Date Display */}
+                            <div className="lg:hidden mt-2 text-center">
+                                <div className="text-xs font-medium text-blue-900">{formatDate(currentDate)}</div>
                             </div>
                             
                             {/* Search Bar (collapsible) */}
@@ -1022,28 +1018,28 @@
                                     <a 
                                         href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
-                                        className={`px-6 py-3 ${currentPage === 'nacionales' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                        className={`px-6 py-3 ${currentPage === 'nacionales' || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'nacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
                                     >
                                         Nacionales
                                     </a>
                                     <a 
                                         href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
-                                        className={`px-6 py-3 ${currentPage === 'sanjuan' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                        className={`px-6 py-3 ${currentPage === 'sanjuan' || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
                                     >
                                         San Juan
                                     </a>
                                     <a 
                                         href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('sindicales'); }}
-                                        className={`px-6 py-3 ${currentPage === 'sindicales' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                        className={`px-6 py-3 ${currentPage === 'sindicales' || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sindicales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
                                     >
                                         Sindicales
                                     </a>
                                     <a 
                                         href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('opinion'); }}
-                                        className={`px-6 py-3 ${currentPage === 'opinion' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                        className={`px-6 py-3 ${currentPage === 'opinion' || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'opinion') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
                                     >
                                         <div className="flex items-center space-x-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -1077,28 +1073,28 @@
                                     <a 
                                         href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
-                                        className={`px-6 py-3 ${currentPage === 'nacionales' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
+                                        className={`px-6 py-3 ${currentPage === 'nacionales' || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'nacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
                                     >
                                         Nacionales
                                     </a>
                                     <a 
                                         href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
-                                        className={`px-6 py-3 ${currentPage === 'sanjuan' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
+                                        className={`px-6 py-3 ${currentPage === 'sanjuan' || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
                                     >
                                         San Juan
                                     </a>
                                     <a 
                                         href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('sindicales'); }}
-                                        className={`px-6 py-3 ${currentPage === 'sindicales' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
+                                        className={`px-6 py-3 ${currentPage === 'sindicales' || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sindicales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
                                     >
                                         Sindicales
                                     </a>
                                     <a 
                                         href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('opinion'); }}
-                                        className={`px-6 py-3 ${currentPage === 'opinion' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
+                                        className={`px-6 py-3 ${currentPage === 'opinion' || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'opinion') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
                                     >
                                         <div className="flex items-center space-x-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
