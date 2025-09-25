@@ -1193,10 +1193,11 @@
                         </div>
                     </header>
 
-                    {/* === NAVEGACIÓN EN ESCRITORIO (fuera del header) === */}
+                    {/* === NAVEGACIÓN Y FECHA EN ESCRITORIO (fuera del header) === */}
                     <nav className="hidden lg:block bg-white border-b border-blue-200 py-2">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div className="flex flex-wrap justify-center gap-1 md:gap-3">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                            {/* Navegación de categorías a la izquierda */}
+                            <div className="flex flex-wrap gap-1 md:gap-3">
                                 <a 
                                     href="#" 
                                     onClick={(e) => { e.preventDefault(); navigateToNews('home'); }}
@@ -1249,6 +1250,11 @@
                                         <span>Opinión</span>
                                     </div>
                                 </a>
+                            </div>
+                            
+                            {/* Fecha actual a la derecha */}
+                            <div className="text-sm font-medium text-blue-900 whitespace-nowrap">
+                                {formatDate(currentDate)}
                             </div>
                         </div>
                     </nav>
