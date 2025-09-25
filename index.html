@@ -44,7 +44,10 @@
         }
         /* Alturas personalizadas para header y footer */
         .header-custom {
-            height: 9rem; /* Aumentado a 144px (h-36) */
+            height: auto;
+            min-height: 4rem; /* Ajustado al logo */
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
         }
         .footer-custom {
             height: 10.5rem; /* h-42 = 168px */
@@ -52,6 +55,23 @@
         /* Nueva clase para aumentar la altura del banner de sponsors en un 50% */
         .sponsor-banner-height {
             height: 3.75rem; /* 60px (50% más que h-10 que era 40px) */
+        }
+        /* Estilos para el header sticky */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        /* Espacio para compensar el header sticky */
+        .content-with-sticky-header {
+            padding-top: 4.5rem; /* Altura del header ajustada */
+        }
+        @media (max-width: 1023px) {
+            .content-with-sticky-header {
+                padding-top: 6rem; /* Header + fecha móvil + margen */
+            }
         }
     </style>
 </head>
@@ -1097,8 +1117,8 @@
             };
             return (
                 <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-                    {/* Header */}
-                    <header className="bg-white border-b-4 border-blue-800 shadow-lg header-custom overflow-hidden">
+                    {/* Header - solo logo y botón móvil */}
+                    <header className="bg-white border-b-4 border-blue-800 shadow-lg header-custom overflow-hidden sticky-header">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
                             <div className="flex justify-between items-center py-1">
                                 <div className="flex items-center space-x-4">
@@ -1131,14 +1151,9 @@
                                         </a>
                                     </div>
                                 </div>
-                                <div className="hidden lg:block text-right">
-                                    <div className="text-sm font-bold text-blue-900">{formatDate(currentDate)}</div>
-                                </div>
+                                {/* ❌ Fecha en escritorio eliminada del header */}
                             </div>
-                            {/* Mobile Date Display */}
-                            <div className="lg:hidden mt-1 text-center">
-                                <div className="text-xs font-medium text-blue-900">{formatDate(currentDate)}</div>
-                            </div>
+                            {/* ❌ Fecha en móvil eliminada del header */}
                             {/* Search Bar (collapsible) */}
                             {isSearchOpen && (
                                 <div className="py-2 border-t border-blue-100">
@@ -1174,66 +1189,77 @@
                                     </div>
                                 </div>
                             )}
-                            {/* Desktop Navigation */}
-                            <nav className="hidden lg:block border-t border-blue-100 py-1">
-                                <div className="flex flex-wrap justify-center gap-1 md:gap-3">
-                                    <a 
-                                        href="#" 
-                                        onClick={(e) => { e.preventDefault(); navigateToNews('home'); }}
-                                        className={`px-4 py-1 text-sm ${currentPage === 'home' && !currentNewsId ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                    >
-                                        <div className="flex items-center space-x-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                                            </svg>
-                                            <span>Inicio</span>
-                                        </div>
-                                    </a>
-                                    <a 
-                                        href="#" 
-                                        onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
-                                        className={`px-4 py-1 text-sm ${(currentPage === 'sanjuan' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                    >
-                                        San Juan
-                                    </a>
-                                    <a 
-                                        href="#" 
-                                        onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
-                                        className={`px-4 py-1 text-sm ${(currentPage === 'nacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'nacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                    >
-                                        Nacionales
-                                    </a>
-                                    <a 
-                                        href="#" 
-                                        onClick={(e) => { e.preventDefault(); navigateToNews('internacionales'); }}
-                                        className={`px-4 py-1 text-sm ${(currentPage === 'internacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'internacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                    >
-                                        Internacionales
-                                    </a>
-                                    <a 
-                                        href="#" 
-                                        onClick={(e) => { e.preventDefault(); navigateToNews('sindicales'); }}
-                                        className={`px-4 py-1 text-sm ${(currentPage === 'sindicales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sindicales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                    >
-                                        Sindicales
-                                    </a>
-                                    <a 
-                                        href="#" 
-                                        onClick={(e) => { e.preventDefault(); navigateToNews('opinion'); }}
-                                        className={`px-4 py-1 text-sm ${(currentPage === 'opinion' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'opinion') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                    >
-                                        <div className="flex items-center space-x-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                            </svg>
-                                            <span>Opinión</span>
-                                        </div>
-                                    </a>
-                                </div>
-                            </nav>
+                            {/* ❌ Navegación de escritorio eliminada del header */}
                         </div>
                     </header>
-                    
+
+                    {/* === NAVEGACIÓN EN ESCRITORIO (fuera del header) === */}
+                    <nav className="hidden lg:block bg-white border-b border-blue-200 py-2">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex flex-wrap justify-center gap-1 md:gap-3">
+                                <a 
+                                    href="#" 
+                                    onClick={(e) => { e.preventDefault(); navigateToNews('home'); }}
+                                    className={`px-4 py-1 text-sm ${currentPage === 'home' && !currentNewsId ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                >
+                                    <div className="flex items-center space-x-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                                        </svg>
+                                        <span>Inicio</span>
+                                    </div>
+                                </a>
+                                <a 
+                                    href="#" 
+                                    onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
+                                    className={`px-4 py-1 text-sm ${(currentPage === 'sanjuan' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                >
+                                    San Juan
+                                </a>
+                                <a 
+                                    href="#" 
+                                    onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
+                                    className={`px-4 py-1 text-sm ${(currentPage === 'nacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'nacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                >
+                                    Nacionales
+                                </a>
+                                <a 
+                                    href="#" 
+                                    onClick={(e) => { e.preventDefault(); navigateToNews('internacionales'); }}
+                                    className={`px-4 py-1 text-sm ${(currentPage === 'internacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'internacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                >
+                                    Internacionales
+                                </a>
+                                <a 
+                                    href="#" 
+                                    onClick={(e) => { e.preventDefault(); navigateToNews('sindicales'); }}
+                                    className={`px-4 py-1 text-sm ${(currentPage === 'sindicales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sindicales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                >
+                                    Sindicales
+                                </a>
+                                <a 
+                                    href="#" 
+                                    onClick={(e) => { e.preventDefault(); navigateToNews('opinion'); }}
+                                    className={`px-4 py-1 text-sm ${(currentPage === 'opinion' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'opinion') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                >
+                                    <div className="flex items-center space-x-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                        </svg>
+                                        <span>Opinión</span>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* === FECHA EN MÓVIL (encima del banner de sponsors) === */}
+                    <div className="lg:hidden bg-white py-1 border-b border-blue-200">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                            <div className="text-xs font-medium text-blue-900">{formatDate(currentDate)}</div>
+                        </div>
+                    </div>
+
                     {/* Banner de Sponsors - FUERA DEL HEADER */}
                     <div className="bg-blue-50 border-b border-blue-100 overflow-hidden">
                         <div 
@@ -1272,7 +1298,7 @@
                             ))}
                         </div>
                     </div>
-                    
+
                     {/* Mobile Navigation Menu */}
                     {mobileMenuOpen && (
                         <div className="lg:hidden bg-white border-b-2 border-blue-800 shadow-lg z-50">
@@ -1334,8 +1360,9 @@
                             </div>
                         </div>
                     )}
+
                     {/* Main Content */}
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 content-with-sticky-header">
                         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                             {/* Main Content Area */}
                             <div className="lg:col-span-4">
@@ -1427,6 +1454,7 @@
                             </div>
                         </div>
                     </div>
+
                     {/* Footer */}
                     <footer className="bg-gradient-to-r from-blue-900 to-blue-800 text-white mt-8 footer-custom">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
