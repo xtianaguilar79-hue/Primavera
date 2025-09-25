@@ -37,7 +37,6 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
     <div id="root"></div>
-    
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -50,7 +49,8 @@
                 nacionales: [],
                 sanjuan: [],
                 sindicales: [],
-                opinion: []
+                opinion: [],
+                internacionales: []
             });
             const [loading, setLoading] = useState(true);
             const [currentDate, setCurrentDate] = useState(new Date());
@@ -64,9 +64,9 @@
                 nacionales: 1,
                 sanjuan: 1,
                 sindicales: 1,
-                opinion: 1
+                opinion: 1,
+                internacionales: 1
             });
-
             // WordPress API base URL - Configurado con tu sitio WordPress
             const WORDPRESS_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/xtianaguilar79-hbsty.wordpress.com';
             // IDs de categorías de tu WordPress
@@ -74,9 +74,9 @@
                 nacionales: 170094,
                 sanjuan: 67720,
                 sindicales: 3865306,
-                opinion: 352
+                opinion: 352,
+                internacionales: 17119
             };
-
             // Función para limpiar el texto de &nbsp; y otros caracteres no deseados
             const cleanText = (text) => {
                 if (!text) return text;
@@ -98,7 +98,6 @@
                 cleanedText = cleanedText.trim();
                 return cleanedText;
             };
-
             // Función para obtener noticias de WordPress
             const fetchNewsFromWordPress = async () => {
                 try {
@@ -109,7 +108,8 @@
                         nacionales: [],
                         sanjuan: [],
                         sindicales: [],
-                        opinion: []
+                        opinion: [],
+                        internacionales: []
                     };
                     // Obtenemos las noticias para cada categoría
                     for (const [key, categoryId] of Object.entries(categories)) {
@@ -147,7 +147,6 @@
                     setLoading(false);
                 }
             };
-
             // Función auxiliar para procesar los posts
             const processPosts = (posts, categoryKey) => {
                 return posts.map(post => {
@@ -210,11 +209,13 @@
                         additionalImages: additionalImages,
                         category: categoryKey.toUpperCase() === 'NACIONALES' ? 'NACIONAL' : 
                                  categoryKey.toUpperCase() === 'SANJUAN' ? 'SAN JUAN' : 
-                                 categoryKey.toUpperCase() === 'SINDICALES' ? 'SINDICAL' : 'OPINIÓN',
+                                 categoryKey.toUpperCase() === 'SINDICALES' ? 'SINDICAL' : 
+                                 categoryKey.toUpperCase() === 'INTERNACIONALES' ? 'INTERNACIONAL' : 'OPINIÓN',
                         categoryKey: categoryKey, // Guardamos la clave de categoría
                         categoryColor: categoryKey === 'nacionales' ? 'bg-blue-600' : 
                                       categoryKey === 'sanjuan' ? 'bg-red-500' : 
-                                      categoryKey === 'sindicales' ? 'bg-green-600' : 'bg-purple-600',
+                                      categoryKey === 'sindicales' ? 'bg-green-600' : 
+                                      categoryKey === 'internacionales' ? 'bg-yellow-600' : 'bg-purple-600',
                         content: processedContent,
                         source: source,
                         date: formattedDate,
@@ -223,7 +224,6 @@
                     };
                 });
             };
-
             // Manejar el hash de la URL para navegación directa a noticias
             const checkHash = () => {
                 const hash = window.location.hash.replace('#', '');
@@ -236,14 +236,13 @@
                     }
                 } else if (hash && hash !== 'home') {
                     const [section] = hash.split('/');
-                    if (['nacionales', 'sanjuan', 'sindicales', 'opinion'].includes(section)) {
+                    if (['nacionales', 'sanjuan', 'sindicales', 'opinion', 'internacionales'].includes(section)) {
                         setCurrentPage(section);
                         setCurrentNewsId(null);
                         setTimeout(() => window.scrollTo(0, 0), 100);
                     }
                 }
             };
-
             useEffect(() => {
                 // Handle browser back/forward buttons
                 const handlePopState = () => {
@@ -268,7 +267,6 @@
                     clearInterval(newsInterval);
                 };
             }, []);
-
             // Format date to Spanish
             const formatDate = (date) => {
                 const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -279,7 +277,6 @@
                 const year = date.getFullYear();
                 return `${dayName} ${day} de ${month} de ${year}`;
             };
-
             // Get news by ID
             const getNewsById = (id) => {
                 for (const section in newsData) {
@@ -288,7 +285,6 @@
                 }
                 return null;
             };
-
             // Get related news
             const getRelatedNews = (currentNews) => {
                 if (!currentNews) return [];
@@ -299,13 +295,11 @@
                 // Tomar las 3 más recientes
                 return relatedNews.slice(0, 3);
             };
-
             // Navigation function
             const navigateToNews = (section, newsId = null) => {
                 setCurrentPage(section);
                 setCurrentNewsId(newsId);
                 setMobileMenuOpen(false);
-                
                 if (newsId) {
                     window.location.hash = `noticia/${section}/${newsId}`;
                 } else {
@@ -313,7 +307,6 @@
                 }
                 window.scrollTo(0, 0);
             };
-
             // Pagination function
             const getPaginatedNews = (section, page) => {
                 const newsList = newsData[section];
@@ -321,12 +314,10 @@
                 const endIndex = startIndex + 10;
                 return newsList.slice(startIndex, endIndex);
             };
-
             // Total pages for a section
             const getTotalPages = (section) => {
                 return Math.ceil(newsData[section].length / 10);
             };
-
             // Search function
             const searchNews = () => {
                 if (!searchQuery.trim()) return [];
@@ -341,32 +332,27 @@
                 }
                 return results;
             };
-
             // Share functions
             const getCurrentUrl = (news) => {
                 return `${window.location.origin}${window.location.pathname}#noticia/${news.categoryKey}/${news.id}`;
             };
-
             const shareOnWhatsApp = (news) => {
                 const url = encodeURIComponent(getCurrentUrl(news));
                 const title = encodeURIComponent(news.title);
                 const whatsappUrl = `https://wa.me/?text=${title}%20${url}`;
                 window.open(whatsappUrl, '_blank');
             };
-
             const shareOnFacebook = (news) => {
                 const url = encodeURIComponent(getCurrentUrl(news));
                 const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
                 window.open(facebookUrl, '_blank', 'width=600,height=400');
             };
-
             const shareOnLinkedIn = (news) => {
                 const url = encodeURIComponent(getCurrentUrl(news));
                 const title = encodeURIComponent(news.title);
                 const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`;
                 window.open(linkedinUrl, '_blank', 'width=600,height=400');
             };
-
             // Render specific news article
             const renderNewsArticle = (news) => {
                 if (!news) return null;
@@ -378,7 +364,8 @@
                                 <h2 className="text-2xl font-bold text-white">
                                     {news.category === 'NACIONAL' ? 'Noticias Nacionales' : 
                                     news.category === 'SAN JUAN' ? 'Noticias de San Juan' : 
-                                    news.category === 'SINDICAL' ? 'Noticias Sindicales' : 'Columnas de Opinión'}
+                                    news.category === 'SINDICAL' ? 'Noticias Sindicales' : 
+                                    news.category === 'INTERNACIONAL' ? 'Noticias Internacionales' : 'Columnas de Opinión'}
                                 </h2>
                                 <div className="w-24 h-1 bg-red-500 mt-2"></div>
                             </div>
@@ -498,7 +485,6 @@
                     </div>
                 );
             };
-
             // Render news list for a section with pagination
             const renderNewsList = (section) => {
                 const currentPageNum = currentPageNumbers[section];
@@ -511,7 +497,8 @@
                                 <h2 className="text-2xl font-bold text-white">
                                     {section === 'nacionales' ? 'Noticias Nacionales' : 
                                     section === 'sanjuan' ? 'Noticias de San Juan' : 
-                                    section === 'sindicales' ? 'Noticias Sindicales' : 'Columnas de Opinión'}
+                                    section === 'sindicales' ? 'Noticias Sindicales' : 
+                                    section === 'internacionales' ? 'Noticias Internacionales' : 'Columnas de Opinión'}
                                 </h2>
                                 <div className="w-24 h-1 bg-red-500 mt-2"></div>
                             </div>
@@ -662,7 +649,6 @@
                     </div>
                 );
             };
-
             // Render search results
             const renderSearchResults = () => {
                 const results = searchNews();
@@ -702,6 +688,7 @@
                                                     if (news.id.includes('sanjuan')) section = 'sanjuan';
                                                     else if (news.id.includes('sindical')) section = 'sindicales';
                                                     else if (news.id.includes('opinion')) section = 'opinion';
+                                                    else if (news.id.includes('internacionales')) section = 'internacionales';
                                                     navigateToNews(section, news.id);
                                                 }}
                                             >
@@ -779,7 +766,6 @@
                     </div>
                 );
             };
-
             const renderPageContent = () => {
                 if (loading) {
                     return (
@@ -826,6 +812,7 @@
                     case 'sanjuan':
                     case 'sindicales':
                     case 'opinion':
+                    case 'internacionales':
                         if (currentNewsId) {
                             const news = getNewsById(currentNewsId);
                             if (!news) {
@@ -844,7 +831,8 @@
                                         >
                                             Volver a {currentPage === 'nacionales' ? 'Nacionales' : 
                                                     currentPage === 'sanjuan' ? 'San Juan' : 
-                                                    currentPage === 'sindicales' ? 'Sindicales' : 'Opinión'}
+                                                    currentPage === 'sindicales' ? 'Sindicales' : 
+                                                    currentPage === 'internacionales' ? 'Internacionales' : 'Opinión'}
                                         </button>
                                     </div>
                                 );
@@ -857,8 +845,9 @@
                     default:
                         // Get all news combined and sorted by date (newest first)
                         const allNews = [
-                            ...newsData.nacionales,
                             ...newsData.sanjuan,
+                            ...newsData.nacionales,
+                            ...newsData.internacionales,
                             ...newsData.sindicales,
                             ...newsData.opinion
                         ].sort((a, b) => new Date(b.originalDate) - new Date(a.originalDate));
@@ -909,6 +898,7 @@
                                                             if (news.id.includes('sanjuan')) section = 'sanjuan';
                                                             else if (news.id.includes('sindical')) section = 'sindicales';
                                                             else if (news.id.includes('opinion')) section = 'opinion';
+                                                            else if (news.id.includes('internacionales')) section = 'internacionales';
                                                             navigateToNews(section, news.id);
                                                         }}
                                                     >
@@ -1005,6 +995,7 @@
                                                             if (news.id.includes('sanjuan')) section = 'sanjuan';
                                                             else if (news.id.includes('sindical')) section = 'sindicales';
                                                             else if (news.id.includes('opinion')) section = 'opinion';
+                                                            else if (news.id.includes('internacionales')) section = 'internacionales';
                                                             navigateToNews(section, news.id);
                                                         }}
                                                     >
@@ -1084,7 +1075,6 @@
                         );
                 }
             };
-
             return (
                 <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
                     {/* Header */}
@@ -1103,33 +1093,25 @@
                                     </button>
                                     <div className="relative">
                                         <a href="#" onClick={(e) => { e.preventDefault(); navigateToNews('home'); }}>
-                                            <div className="w-20 h-20 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center border-4 border-red-500 shadow-lg">
-                                                <img 
-                                                    src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/Imagen_de_WhatsApp_2025-09-15_a_las_16.36.57_a3e577b6_gvohqi.jpg" 
-                                                    alt="UG Noticias Mineras Logo" 
-                                                    className="w-16 h-16 object-contain"
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.parentNode.innerHTML = `
-                                                            <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                                                </svg>
-                                                            </div>
-                                                        `;
-                                                    }}
-                                                />
-                                            </div>
+                                            <img 
+                                                src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758727006/UG_NOTICIAS_PNG_e2expz.png" 
+                                                alt="UG Noticias Mineras Logo" 
+                                                className="w-48 h-48 object-contain"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentNode.innerHTML = `
+                                                        <div class="w-48 h-48 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-36 w-36 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                                            </svg>
+                                                        </div>
+                                                    `;
+                                                }}
+                                            />
                                         </a>
-                                        <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
-                                            <div className="w-3 h-3 bg-blue-800 rounded-full"></div>
-                                        </div>
                                     </div>
-                                    <div>
-                                        <a href="#" onClick={(e) => { e.preventDefault(); navigateToNews('home'); }} className="block">
-                                            <h1 className="text-3xl font-bold text-blue-900 tracking-tight hover:text-blue-700 transition-colors">UG Noticias Mineras</h1>
-                                        </a>
-                                        <p className="text-blue-700 text-sm font-medium">Información del sector minero argentino</p>
+                                    <div className="hidden lg:block">
+                                        <div className="text-lg font-bold text-blue-900">{formatDate(currentDate)}</div>
                                     </div>
                                 </div>
                                 <div className="hidden lg:block text-right">
@@ -1231,6 +1213,13 @@
                                     </a>
                                     <a 
                                         href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
+                                        className={`px-6 py-3 ${(currentPage === 'sanjuan' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        San Juan
+                                    </a>
+                                    <a 
+                                        href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
                                         className={`px-6 py-3 ${(currentPage === 'nacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'nacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
                                     >
@@ -1238,10 +1227,10 @@
                                     </a>
                                     <a 
                                         href="#" 
-                                        onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
-                                        className={`px-6 py-3 ${(currentPage === 'sanjuan' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('internacionales'); }}
+                                        className={`px-6 py-3 ${(currentPage === 'internacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'internacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
                                     >
-                                        San Juan
+                                        Internacionales
                                     </a>
                                     <a 
                                         href="#" 
@@ -1285,6 +1274,13 @@
                                     </a>
                                     <a 
                                         href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
+                                        className={`px-6 py-3 ${(currentPage === 'sanjuan' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
+                                    >
+                                        San Juan
+                                    </a>
+                                    <a 
+                                        href="#" 
                                         onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
                                         className={`px-6 py-3 ${(currentPage === 'nacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'nacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
                                     >
@@ -1292,10 +1288,10 @@
                                     </a>
                                     <a 
                                         href="#" 
-                                        onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
-                                        className={`px-6 py-3 ${(currentPage === 'sanjuan' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('internacionales'); }}
+                                        className={`px-6 py-3 ${(currentPage === 'internacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'internacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300`}
                                     >
-                                        San Juan
+                                        Internacionales
                                     </a>
                                     <a 
                                         href="#" 
@@ -1419,27 +1415,21 @@
                             <div className="flex flex-col lg:flex-row justify-between items-center">
                                 <div className="mb-6 lg:mb-0">
                                     <a href="#" onClick={(e) => { e.preventDefault(); navigateToNews('home'); }} className="flex items-center space-x-3">
-                                        <div className="w-16 h-16 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center border-2 border-red-500">
-                                            <img 
-                                                src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758289017/Imagen_de_WhatsApp_2025-09-15_a_las_16.36.57_a3e577b6_gvohqi.jpg" 
-                                                alt="UG Noticias Mineras Logo" 
-                                                className="w-12 h-12 object-contain"
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                    e.target.parentNode.innerHTML = `
-                                                        <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                                            </svg>
-                                                        </div>
-                                                    `;
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">UG Noticias Mineras</h3>
-                                            <p className="text-blue-300 text-sm">© 2025 Todos los derechos reservados</p>
-                                        </div>
+                                        <img 
+                                            src="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758727006/UG_NOTICIAS_PNG_e2expz.png" 
+                                            alt="UG Noticias Mineras Logo" 
+                                            className="w-48 h-48 object-contain"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.parentNode.innerHTML = `
+                                                    <div class="w-48 h-48 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-36 w-36 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                                        </svg>
+                                                    </div>
+                                                `;
+                                            }}
+                                        />
                                     </a>
                                 </div>
                                 <div className="flex space-x-4">
