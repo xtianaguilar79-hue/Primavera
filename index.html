@@ -33,7 +33,6 @@
         .prose {
             max-width: none;
         }
-        /* Estilos personalizados para el logo más grande */
         .logo-large {
             width: 576px;
             height: 576px;
@@ -42,21 +41,18 @@
             width: 432px;
             height: 432px;
         }
-        /* Alturas personalizadas para header y footer */
         .header-custom {
             height: auto;
-            min-height: 4rem; /* Ajustado al logo */
+            min-height: 4rem;
             padding-top: 0.5rem;
             padding-bottom: 0.5rem;
         }
         .footer-custom {
-            height: 10.5rem; /* h-42 = 168px */
+            height: 10.5rem;
         }
-        /* Nueva clase para aumentar la altura del banner de sponsors en un 50% */
         .sponsor-banner-height {
-            height: 3.75rem; /* 60px (50% más que h-10 que era 40px) */
+            height: 3.75rem;
         }
-        /* Estilos para el header sticky */
         .sticky-header {
             position: sticky;
             top: 0;
@@ -64,13 +60,12 @@
             background-color: white;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        /* Espacio para compensar el header sticky */
         .content-with-sticky-header {
-            padding-top: 4.5rem; /* Altura del header ajustada */
+            padding-top: 4.5rem;
         }
         @media (max-width: 1023px) {
             .content-with-sticky-header {
-                padding-top: 6rem; /* Header + fecha móvil + margen */
+                padding-top: 6rem;
             }
         }
     </style>
@@ -107,9 +102,7 @@
                 opinion: 1,
                 internacionales: 1
             });
-            // WordPress API base URL - Configurado con tu sitio WordPress
             const WORDPRESS_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/xtianaguilar79-hbsty.wordpress.com';
-            // IDs de categorías de tu WordPress
             const categories = {
                 nacionales: 170094,
                 sanjuan: 67720,
@@ -117,12 +110,9 @@
                 opinion: 352,
                 internacionales: 17119
             };
-            // Función para limpiar el texto de &nbsp; y otros caracteres no deseados
             const cleanText = (text) => {
                 if (!text) return text;
-                // Reemplazar &nbsp; por espacios normales
                 let cleanedText = text.replace(/&nbsp;/g, ' ');
-                // También limpiar otras entidades HTML comunes
                 cleanedText = cleanedText.replace(/&amp;/g, '&');
                 cleanedText = cleanedText.replace(/</g, '<');
                 cleanedText = cleanedText.replace(/>/g, '>');
@@ -132,18 +122,14 @@
                 cleanedText = cleanedText.replace(/&#8221;/g, '"');
                 cleanedText = cleanedText.replace(/&#8211;/g, '-');
                 cleanedText = cleanedText.replace(/&#8212;/g, '--');
-                // Eliminar múltiples espacios consecutivos
                 cleanedText = cleanedText.replace(/\s+/g, ' ');
-                // Eliminar espacios al inicio y final
                 cleanedText = cleanedText.trim();
                 return cleanedText;
             };
-            // Función para obtener noticias de WordPress
             const fetchNewsFromWordPress = async () => {
                 try {
                     setLoading(true);
                     setError(null);
-                    // Creamos un objeto para almacenar las noticias por categoría
                     let fetchedNewsData = {
                         nacionales: [],
                         sanjuan: [],
@@ -151,20 +137,16 @@
                         opinion: [],
                         internacionales: []
                     };
-                    // Obtenemos las noticias para cada categoría
                     for (const [key, categoryId] of Object.entries(categories)) {
                         try {
-                            // Primero obtenemos los posts con la categoría
                             const response = await fetch(`${WORDPRESS_API_URL}/posts?categories=${categoryId}&per_page=50&orderby=date&order=desc&_embed`);
                             if (!response.ok) {
                                 console.error(`Error al obtener noticias de la categoría ${key}: ${response.status} ${response.statusText}`);
-                                // Intentamos con un enfoque alternativo
                                 const altResponse = await fetch(`${WORDPRESS_API_URL}/posts?per_page=50&orderby=date&order=desc&_embed`);
                                 if (!altResponse.ok) {
                                     throw new Error(`Error al obtener noticias: ${altResponse.status}`);
                                 }
                                 const altPosts = await altResponse.json();
-                                // Filtramos por categoría manualmente
                                 const filteredPosts = altPosts.filter(post => 
                                     post.categories && post.categories.includes(categoryId)
                                 );
@@ -175,7 +157,6 @@
                             fetchedNewsData[key] = processPosts(posts, key);
                         } catch (err) {
                             console.error(`Error fetching ${key} news:`, err);
-                            // Mantenemos array vacío si hay error en una categoría específica
                             fetchedNewsData[key] = [];
                         }
                     }
@@ -187,14 +168,10 @@
                     setLoading(false);
                 }
             };
-            // Función auxiliar para procesar los posts
             const processPosts = (posts, categoryKey) => {
                 return posts.map(post => {
-                    // Procesar el contenido para limpiarlo y hacerlo más legible
                     let processedContent = post.content?.rendered || '';
-                    // Limpiar el contenido de &nbsp; y otros caracteres no deseados
                     processedContent = cleanText(processedContent);
-                    // Extraer la primera imagen del contenido si no hay imagen destacada
                     let firstContentImage = null;
                     const contentImages = processedContent.match(/<img[^>]+src="([^">]+)"/g);
                     if (contentImages && contentImages.length > 0) {
@@ -203,42 +180,33 @@
                             firstContentImage = srcMatch[1];
                         }
                     }
-                    // URL de la imagen destacada o imagen por defecto
                     let imageUrl = 'https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758249132/Cuchari_dsjsok.jpg';
-                    // Intentar obtener la imagen destacada
                     if (post.featured_media && post._embedded?.['wp:featuredmedia']?.[0]?.source_url) {
                         imageUrl = post._embedded['wp:featuredmedia'][0].source_url;
                     } else if (firstContentImage) {
                         imageUrl = firstContentImage;
                     }
-                    // Crear array de imágenes adicionales
                     let additionalImages = [imageUrl];
                     if (firstContentImage && firstContentImage !== imageUrl) {
                         additionalImages.push(firstContentImage);
                     }
-                    // Extraer fuente del contenido si está disponible
                     let source = 'Fuente: WordPress';
                     const sourceMatch = processedContent.match(/Fuente:\s*([^<]+)/i);
                     if (sourceMatch && sourceMatch[1]) {
                         source = `Fuente: ${sourceMatch[1].trim()}`;
                     }
-                    // Formatear fecha
                     const postDate = new Date(post.date);
                     const options = { day: 'numeric', month: 'long', year: 'numeric' };
                     const formattedDate = postDate.toLocaleDateString('es-ES', options).replace(' de ', ' de ');
-                    // Limpiar el excerpt
                     let excerpt = post.excerpt?.rendered || '';
                     excerpt = excerpt.replace(/<[^>]*>/g, '').trim();
-                    // Limpiar el excerpt de &nbsp; y otros caracteres
                     excerpt = cleanText(excerpt);
                     if (excerpt.length > 150) {
                         excerpt = excerpt.substring(0, 150) + '...';
                     } else if (excerpt.length === 0 && processedContent) {
-                        // Si no hay excerpt, tomamos las primeras 150 letras del contenido
                         const cleanContent = processedContent.replace(/<[^>]*>/g, '').trim();
                         excerpt = cleanContent.substring(0, 150) + '...';
                     }
-                    // Limpiar el título también
                     let title = post.title?.rendered || 'Sin título';
                     title = cleanText(title);
                     return {
@@ -251,7 +219,7 @@
                                  categoryKey.toUpperCase() === 'SANJUAN' ? 'SAN JUAN' : 
                                  categoryKey.toUpperCase() === 'SINDICALES' ? 'SINDICAL' : 
                                  categoryKey.toUpperCase() === 'INTERNACIONALES' ? 'INTERNACIONAL' : 'OPINIÓN',
-                        categoryKey: categoryKey, // Guardamos la clave de categoría
+                        categoryKey: categoryKey,
                         categoryColor: categoryKey === 'nacionales' ? 'bg-blue-600' : 
                                       categoryKey === 'sanjuan' ? 'bg-red-500' : 
                                       categoryKey === 'sindicales' ? 'bg-green-600' : 
@@ -260,11 +228,10 @@
                         source: source,
                         date: formattedDate,
                         related: [],
-                        originalDate: post.date // Guardamos la fecha original para ordenar
+                        originalDate: post.date
                     };
                 });
             };
-            // Manejar el hash de la URL para navegación directa a noticias
             const checkHash = () => {
                 const hash = window.location.hash.replace('#', '');
                 if (hash.startsWith('noticia/')) {
@@ -284,30 +251,24 @@
                 }
             };
             useEffect(() => {
-                // Handle browser back/forward buttons
                 const handlePopState = () => {
                     checkHash();
                 };
                 window.addEventListener('popstate', handlePopState);
-                // Cargar noticias desde WordPress
                 fetchNewsFromWordPress();
-                // Check URL params on initial load
                 checkHash();
-                // Update date every minute
                 const dateInterval = setInterval(() => {
                     setCurrentDate(new Date());
                 }, 60000);
-                // Configurar intervalo para actualizar noticias cada 5 minutos
                 const newsInterval = setInterval(() => {
                     fetchNewsFromWordPress();
-                }, 300000); // 5 minutos
+                }, 300000);
                 return () => {
                     window.removeEventListener('popstate', handlePopState);
                     clearInterval(dateInterval);
                     clearInterval(newsInterval);
                 };
             }, []);
-            // Format date to Spanish
             const formatDate = (date) => {
                 const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
                 const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -317,7 +278,6 @@
                 const year = date.getFullYear();
                 return `${dayName} ${day} de ${month} de ${year}`;
             };
-            // Get news by ID
             const getNewsById = (id) => {
                 for (const section in newsData) {
                     const news = newsData[section].find(item => item.id === id || item.id.toString() === id.toString());
@@ -325,17 +285,12 @@
                 }
                 return null;
             };
-            // Get related news
             const getRelatedNews = (currentNews) => {
                 if (!currentNews) return [];
-                // Obtener noticias de la misma categoría
                 const sameCategoryNews = newsData[currentNews.categoryKey] || [];
-                // Filtrar para excluir la noticia actual
                 const relatedNews = sameCategoryNews.filter(news => news.id !== currentNews.id);
-                // Tomar las 3 más recientes
                 return relatedNews.slice(0, 3);
             };
-            // Navigation function
             const navigateToNews = (section, newsId = null) => {
                 setCurrentPage(section);
                 setCurrentNewsId(newsId);
@@ -347,18 +302,15 @@
                 }
                 window.scrollTo(0, 0);
             };
-            // Pagination function
             const getPaginatedNews = (section, page) => {
                 const newsList = newsData[section];
                 const startIndex = (page - 1) * 10;
                 const endIndex = startIndex + 10;
                 return newsList.slice(startIndex, endIndex);
             };
-            // Total pages for a section
             const getTotalPages = (section) => {
                 return Math.ceil(newsData[section].length / 10);
             };
-            // Search function
             const searchNews = () => {
                 if (!searchQuery.trim()) return [];
                 let results = [];
@@ -372,7 +324,6 @@
                 }
                 return results;
             };
-            // Share functions
             const getCurrentUrl = (news) => {
                 return `${window.location.origin}${window.location.pathname}#noticia/${news.categoryKey}/${news.id}`;
             };
@@ -393,7 +344,6 @@
                 const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`;
                 window.open(linkedinUrl, '_blank', 'width=600,height=400');
             };
-            // Render specific news article
             const renderNewsArticle = (news) => {
                 if (!news) return null;
                 const relatedNews = getRelatedNews(news);
@@ -405,7 +355,7 @@
                                     {news.category === 'NACIONAL' ? 'Noticias Nacionales' : 
                                     news.category === 'SAN JUAN' ? 'Noticias de San Juan' : 
                                     news.category === 'SINDICAL' ? 'Noticias Sindicales' : 
-                                    news.category === 'INTERNACIONAL' ? 'Noticias Internacionales' : 'Columnas de Opinión'}
+                                    news.category === 'INTERNACIONAL' ? 'Noticias Internacionales' : 'Columna de Opinión'}
                                 </h2>
                                 <div className="w-24 h-1 bg-red-500 mt-2"></div>
                             </div>
@@ -434,7 +384,6 @@
                                             <h3 className="font-bold text-2xl text-blue-900">{news.title}</h3>
                                         </div>
                                         {news.subtitle && <p className="text-blue-700 font-medium mb-4">{news.subtitle}</p>}
-                                        {/* Display additional images inside the article */}
                                         {news.additionalImages && news.additionalImages.length > 1 && (
                                             <div className="my-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {news.additionalImages.slice(1).map((img, index) => (
@@ -463,7 +412,6 @@
                                             <p className="text-blue-800 font-medium">{news.source}</p>
                                             <p className="text-gray-500 text-sm mt-1">Publicado: {news.date}</p>
                                         </div>
-                                        {/* Social share buttons moved to the end of the article */}
                                         <div className="mt-6 pt-4 border-t border-blue-200 flex justify-center space-x-4">
                                             <button 
                                                 onClick={() => shareOnWhatsApp(news)}
@@ -495,7 +443,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                {/* Related News */}
                                 {relatedNews.length > 0 && (
                                     <div className="mt-8">
                                         <h4 className="text-xl font-bold text-blue-900 mb-4">Noticias Relacionadas</h4>
@@ -525,7 +472,6 @@
                     </div>
                 );
             };
-            // Render news list for a section with pagination
             const renderNewsList = (section) => {
                 const currentPageNum = currentPageNumbers[section];
                 const newsList = getPaginatedNews(section, currentPageNum);
@@ -538,7 +484,7 @@
                                     {section === 'nacionales' ? 'Noticias Nacionales' : 
                                     section === 'sanjuan' ? 'Noticias de San Juan' : 
                                     section === 'sindicales' ? 'Noticias Sindicales' : 
-                                    section === 'internacionales' ? 'Noticias Internacionales' : 'Columnas de Opinión'}
+                                    section === 'internacionales' ? 'Noticias Internacionales' : 'Columna de Opinión'}
                                 </h2>
                                 <div className="w-24 h-1 bg-red-500 mt-2"></div>
                             </div>
@@ -612,7 +558,6 @@
                                                         <p className="text-blue-800 font-medium">{news.source}</p>
                                                         <p className="text-gray-500 text-sm">{news.date}</p>
                                                     </div>
-                                                    {/* Social share buttons in preview */}
                                                     <div className="mt-4 flex space-x-2">
                                                         <button 
                                                             onClick={(e) => {
@@ -657,7 +602,6 @@
                                     </div>
                                 )}
                             </div>
-                            {/* Pagination */}
                             {totalPages > 1 && (
                                 <div className="bg-gray-50 px-6 py-4 flex justify-center items-center space-x-2">
                                     <button 
@@ -689,7 +633,6 @@
                     </div>
                 );
             };
-            // Render search results
             const renderSearchResults = () => {
                 const results = searchNews();
                 return (
@@ -723,7 +666,6 @@
                                                 key={news.id} 
                                                 className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-blue-100 overflow-hidden cursor-pointer flex flex-col md:flex-row"
                                                 onClick={() => {
-                                                    // Determinar la sección basada en el ID
                                                     let section = 'nacionales';
                                                     if (news.id.includes('sanjuan')) section = 'sanjuan';
                                                     else if (news.id.includes('sindical')) section = 'sindicales';
@@ -757,7 +699,6 @@
                                                         <p className="text-blue-800 font-medium">{news.source}</p>
                                                         <p className="text-gray-500 text-sm">{news.date}</p>
                                                     </div>
-                                                    {/* Social share buttons in search results */}
                                                     <div className="mt-4 flex space-x-2">
                                                         <button 
                                                             onClick={(e) => {
@@ -883,7 +824,6 @@
                     case 'search':
                         return renderSearchResults();
                     default:
-                        // Get all news combined and sorted by date (newest first)
                         const allNews = [
                             ...newsData.sanjuan,
                             ...newsData.nacionales,
@@ -891,13 +831,10 @@
                             ...newsData.sindicales,
                             ...newsData.opinion
                         ].sort((a, b) => new Date(b.originalDate) - new Date(a.originalDate));
-                        // Get featured news (first 4)
                         const featuredNews = allNews.slice(0, 4);
-                        // Get recent news (next 15)
                         const recentNews = allNews.slice(4, 19);
                         return (
                             <div className="space-y-8">
-                                {/* Featured News Section */}
                                 <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
                                     <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-6">
                                         <h2 className="text-2xl font-bold text-white">Noticias Destacadas</h2>
@@ -933,7 +870,6 @@
                                                         key={news.id} 
                                                         className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg border border-blue-200 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
                                                         onClick={() => {
-                                                            // Determinar la sección basada en el ID
                                                             let section = 'nacionales';
                                                             if (news.id.includes('sanjuan')) section = 'sanjuan';
                                                             else if (news.id.includes('sindical')) section = 'sindicales';
@@ -1016,7 +952,6 @@
                                         )}
                                     </div>
                                 </div>
-                                {/* Recent News Section */}
                                 {recentNews.length > 0 && (
                                     <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
                                         <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-6">
@@ -1030,7 +965,6 @@
                                                         key={news.id} 
                                                         className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-blue-100 overflow-hidden cursor-pointer flex flex-col md:flex-row"
                                                         onClick={() => {
-                                                            // Determinar la sección basada en el ID
                                                             let section = 'nacionales';
                                                             if (news.id.includes('sanjuan')) section = 'sanjuan';
                                                             else if (news.id.includes('sindical')) section = 'sindicales';
@@ -1117,12 +1051,10 @@
             };
             return (
                 <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-                    {/* Header - solo logo y botón móvil */}
                     <header className="bg-white border-b-4 border-blue-800 shadow-lg header-custom overflow-hidden sticky-header">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
-                            <div className="flex justify-between items-center py-1">
+                            <div className="flex justify-between items-center py-1 w-full">
                                 <div className="flex items-center space-x-4">
-                                    {/* Mobile Menu Button */}
                                     <button 
                                         className="lg:hidden text-blue-900 hover:text-blue-700 transition-colors"
                                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -1151,10 +1083,16 @@
                                         </a>
                                     </div>
                                 </div>
-                                {/* ❌ Fecha en escritorio eliminada del header */}
+                                <button 
+                                    onClick={() => setIsSearchOpen(!isSearchOpen)}
+                                    className="text-blue-900 hover:text-blue-700 transition-colors flex items-center"
+                                    aria-label="Buscar"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
                             </div>
-                            {/* ❌ Fecha en móvil eliminada del header */}
-                            {/* Search Bar (collapsible) */}
                             {isSearchOpen && (
                                 <div className="py-2 border-t border-blue-100">
                                     <div className="flex items-center space-x-2">
@@ -1189,84 +1127,78 @@
                                     </div>
                                 </div>
                             )}
-                            {/* ❌ Navegación de escritorio eliminada del header */}
                         </div>
                     </header>
-
-                    {/* === NAVEGACIÓN Y FECHA EN ESCRITORIO (fuera del header) === */}
+                    {/* NAVEGACIÓN EN ESCRITORIO: CATEGORÍAS A LA IZQUIERDA + FECHA A LA DERECHA */}
                     <nav className="hidden lg:block bg-white border-b border-blue-200 py-2">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                            {/* Navegación de categorías a la izquierda */}
-                            <div className="flex flex-wrap gap-1 md:gap-3">
-                                <a 
-                                    href="#" 
-                                    onClick={(e) => { e.preventDefault(); navigateToNews('home'); }}
-                                    className={`px-4 py-1 text-sm ${currentPage === 'home' && !currentNewsId ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                >
-                                    <div className="flex items-center space-x-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                                        </svg>
-                                        <span>Inicio</span>
-                                    </div>
-                                </a>
-                                <a 
-                                    href="#" 
-                                    onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
-                                    className={`px-4 py-1 text-sm ${(currentPage === 'sanjuan' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                >
-                                    San Juan
-                                </a>
-                                <a 
-                                    href="#" 
-                                    onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
-                                    className={`px-4 py-1 text-sm ${(currentPage === 'nacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'nacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                >
-                                    Nacionales
-                                </a>
-                                <a 
-                                    href="#" 
-                                    onClick={(e) => { e.preventDefault(); navigateToNews('internacionales'); }}
-                                    className={`px-4 py-1 text-sm ${(currentPage === 'internacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'internacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                >
-                                    Internacionales
-                                </a>
-                                <a 
-                                    href="#" 
-                                    onClick={(e) => { e.preventDefault(); navigateToNews('sindicales'); }}
-                                    className={`px-4 py-1 text-sm ${(currentPage === 'sindicales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sindicales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                >
-                                    Sindicales
-                                </a>
-                                <a 
-                                    href="#" 
-                                    onClick={(e) => { e.preventDefault(); navigateToNews('opinion'); }}
-                                    className={`px-4 py-1 text-sm ${(currentPage === 'opinion' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'opinion') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
-                                >
-                                    <div className="flex items-center space-x-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                        </svg>
-                                        <span>Opinión</span>
-                                    </div>
-                                </a>
-                            </div>
-                            
-                            {/* Fecha actual a la derecha */}
-                            <div className="text-sm font-medium text-blue-900 whitespace-nowrap">
-                                {formatDate(currentDate)}
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-wrap gap-1 md:gap-3">
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('home'); }}
+                                        className={`px-4 py-1 text-sm ${currentPage === 'home' && !currentNewsId ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        <div className="flex items-center space-x-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                                            </svg>
+                                            <span>Inicio</span>
+                                        </div>
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('sanjuan'); }}
+                                        className={`px-4 py-1 text-sm ${(currentPage === 'sanjuan' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sanjuan') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        San Juan
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('nacionales'); }}
+                                        className={`px-4 py-1 text-sm ${(currentPage === 'nacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'nacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        Nacionales
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('internacionales'); }}
+                                        className={`px-4 py-1 text-sm ${(currentPage === 'internacionales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'internacionales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        Internacionales
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('sindicales'); }}
+                                        className={`px-4 py-1 text-sm ${(currentPage === 'sindicales' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'sindicales') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        Sindicales
+                                    </a>
+                                    <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); navigateToNews('opinion'); }}
+                                        className={`px-4 py-1 text-sm ${(currentPage === 'opinion' && !currentNewsId) || (currentNewsId && getNewsById(currentNewsId)?.categoryKey === 'opinion') ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'} text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                                    >
+                                        <div className="flex items-center space-x-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                            </svg>
+                                            <span>Opinión</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div className="text-sm font-medium text-blue-900">
+                                    {formatDate(currentDate)}
+                                </div>
                             </div>
                         </div>
                     </nav>
-
-                    {/* === FECHA EN MÓVIL (encima del banner de sponsors) === */}
+                    {/* FECHA EN MÓVIL (encima del banner de sponsors) */}
                     <div className="lg:hidden bg-white py-1 border-b border-blue-200">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                             <div className="text-xs font-medium text-blue-900">{formatDate(currentDate)}</div>
                         </div>
                     </div>
-
-                    {/* Banner de Sponsors - FUERA DEL HEADER */}
                     <div className="bg-blue-50 border-b border-blue-100 overflow-hidden">
                         <div 
                             ref={sponsorsRef}
@@ -1304,8 +1236,6 @@
                             ))}
                         </div>
                     </div>
-
-                    {/* Mobile Navigation Menu */}
                     {mobileMenuOpen && (
                         <div className="lg:hidden bg-white border-b-2 border-blue-800 shadow-lg z-50">
                             <div className="max-w-7xl mx-auto px-4 py-2">
@@ -1366,29 +1296,47 @@
                             </div>
                         </div>
                     )}
-
-                    {/* Main Content */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 content-with-sticky-header">
                         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                            {/* Main Content Area */}
                             <div className="lg:col-span-4">
                                 {renderPageContent()}
                             </div>
-                            {/* Sidebar */}
                             <div className="lg:col-span-1">
-                                {/* Opinion Column Box */}
+                                {/* Opinion Column Box - ACTUALIZADO */}
                                 <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden mb-4 cursor-pointer"
                                     onClick={() => navigateToNews('opinion')}
                                 >
                                     <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-3 text-center">
-                                        <h3 className="text-lg font-bold text-white">SIN PELOS EN LA LENGUA</h3>
+                                        <h3 className="text-lg font-bold text-white">Columna de Opinión</h3>
                                         <div className="w-16 h-1 bg-red-500 mx-auto mt-1"></div>
                                     </div>
-                                    <div className="p-3 h-24 bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
-                                        <p className="text-red-800 font-semibold text-center text-sm">Columna de opinión semanal con análisis profundo del sector minero argentino.</p>
-                                    </div>
+                                    {newsData.opinion.length > 0 ? (
+                                        <div className="relative">
+                                            <img 
+                                                src={newsData.opinion[0].image} 
+                                                alt={newsData.opinion[0].title}
+                                                className="w-full h-32 object-cover"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentNode.innerHTML = `
+                                                        <div class="w-full h-32 bg-gradient-to-br from-blue-300 to-blue-400 flex items-center justify-center">
+                                                            <div class="text-blue-800 font-bold text-center px-2">${newsData.opinion[0].title}</div>
+                                                        </div>
+                                                    `;
+                                                }}
+                                            />
+                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                                                <p className="text-white font-semibold text-sm text-center line-clamp-2">
+                                                    {newsData.opinion[0].title}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-3 h-32 bg-white flex items-center justify-center">
+                                            <p className="text-gray-500 text-center text-sm">Sin columnas disponibles</p>
+                                        </div>
+                                    )}
                                 </div>
-                                {/* Collaborators - First Set */}
                                 <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
                                     <div className="p-3 space-y-3">
                                         <img 
@@ -1418,7 +1366,6 @@
                                         />
                                     </div>
                                 </div>
-                                {/* Stats Widget */}
                                 <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden mt-4">
                                     <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-3 text-center">
                                         <h3 className="text-lg font-bold text-white">Datos Mineros</h3>
@@ -1443,7 +1390,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                {/* Refresh Button */}
                                 <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden mt-4">
                                     <div className="p-3">
                                         <button 
@@ -1460,8 +1406,6 @@
                             </div>
                         </div>
                     </div>
-
-                    {/* Footer */}
                     <footer className="bg-gradient-to-r from-blue-900 to-blue-800 text-white mt-8 footer-custom">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
                             <div className="flex flex-col lg:flex-row justify-between items-center">
@@ -1520,7 +1464,6 @@
                 </div>
             );
         };
-        // Render the App
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
