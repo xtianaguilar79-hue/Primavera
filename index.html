@@ -4,23 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UG Noticias Mineras</title>
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://primavera-pb4y.vercel.app/">
-    <meta property="og:title" content="UG Noticias Mineras">
-    <meta property="og:description" content="Noticias actualizadas del sector minero argentino: nacionales, internacionales, sindicales y opinión.">
-    <meta property="og:image" content="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758727006/UG_NOTICIAS_PNG_e2expz.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://primavera-pb4y.vercel.app/">
-    <meta property="twitter:title" content="UG Noticias Mineras">
-    <meta property="twitter:description" content="Noticias actualizadas del sector minero argentino: nacionales, internacionales, sindicales y opinión.">
-    <meta property="twitter:image" content="https://res.cloudinary.com/dtj4ovgv7/image/upload/v1758727006/UG_NOTICIAS_PNG_e2expz.png">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -1145,6 +1128,7 @@
                             )}
                         </div>
                     </header>
+                    {/* NAVEGACIÓN EN ESCRITORIO: CATEGORÍAS A LA IZQUIERDA + FECHA A LA DERECHA */}
                     <nav className="hidden lg:block bg-white border-b border-blue-200 py-2">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="flex items-center justify-between">
@@ -1208,6 +1192,7 @@
                             </div>
                         </div>
                     </nav>
+                    {/* FECHA EN MÓVIL (encima del banner de sponsors) */}
                     <div className="lg:hidden bg-white py-1 border-b border-blue-200">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                             <div className="text-xs font-medium text-blue-900">{formatDate(currentDate)}</div>
@@ -1316,6 +1301,7 @@
                                 {renderPageContent()}
                             </div>
                             <div className="lg:col-span-1">
+                                {/* Opinion Column Box - ACTUALIZADO */}
                                 <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden mb-4 cursor-pointer"
                                     onClick={() => navigateToNews('opinion')}
                                 >
